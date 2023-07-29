@@ -12,9 +12,20 @@ type lexer struct {
 }
 
 type token struct {
-	pos   position
-	value interface{}
+	pos       position
+	value     interface{}
+	tokenType tokenType
 }
+
+type tokenType int
+
+const (
+	INVALID tokenType = iota
+	SEPARATOR
+	IDENT
+	EQUAL
+	VALUE
+)
 
 func newLexer(data io.RuneReader) (lex *lexer, err error) {
 	lex = &lexer{}
@@ -28,6 +39,8 @@ func newLexer(data io.RuneReader) (lex *lexer, err error) {
 }
 
 func (l *lexer) Lex() (tokens []*token, err error) {
+	currToken := &token{}
+	prevToken := &token{}
 	for {
 		r, o, err := l.reader.ReadRune()
 		if err != nil {
@@ -37,11 +50,21 @@ func (l *lexer) Lex() (tokens []*token, err error) {
 			return tokens, err
 		}
 		switch r {
-		case OBJSTART.Rune(), OBJEND.Rune(), COLON.Rune(), COMMA.Rune():
-			tokens = append(tokens, &token{
-				pos:   l.pos,
-				value: r,
-			})
+		case OBJSTART.Rune(), OBJEND.Rune(), COMMA.Rune():
+			currToken = &token{
+				pos:       l.pos,
+				value:     r,
+				tokenType: SEPARATOR,
+			}
+			tokens = append(tokens, currToken)
+			l.pos.column++
+		case COLON.Rune():
+			currToken = &token{
+				pos:       l.pos,
+				value:     r,
+				tokenType: EQUAL,
+			}
+			tokens = append(tokens, currToken)
 			l.pos.column++
 		case '\n', '\r':
 			l.pos.column = 1
@@ -50,8 +73,16 @@ func (l *lexer) Lex() (tokens []*token, err error) {
 			l.pos.column++
 		case QUOTE.Rune():
 			s := strings.Builder{}
-			tok := &token{
+			var tt tokenType
+			switch prevToken.tokenType {
+			case EQUAL:
+				tt = VALUE
+			case SEPARATOR:
+				tt = IDENT
+			}
+			currToken = &token{
 				pos: l.pos,
+        tokenType: tt,
 			}
 			l.pos.column++
 		outerloop:
@@ -67,8 +98,8 @@ func (l *lexer) Lex() (tokens []*token, err error) {
 				l.pos.offset += int64(os)
 				switch rs {
 				case QUOTE.Rune():
-					tok.value = s.String()
-					tokens = append(tokens, tok)
+					currToken.value = s.String()
+					tokens = append(tokens, currToken)
 					break outerloop
 				default:
 					s.WriteRune(rs)
@@ -76,5 +107,6 @@ func (l *lexer) Lex() (tokens []*token, err error) {
 			}
 		}
 		l.pos.offset += int64(o)
+		*prevToken = *currToken
 	}
 }

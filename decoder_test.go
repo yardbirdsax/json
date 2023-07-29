@@ -24,7 +24,7 @@ func TestDecode(t *testing.T) {
 			name:          "simple_object",
 			expectedError: nil,
 			obj:           map[string]interface{}{},
-			want:          map[string]interface{}{"string": "a string"},
+			want:          map[string]interface{}{"string": "a string", "another_string": "another string"},
 		},
 	}
 

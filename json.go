@@ -1,6 +1,7 @@
 package json
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 )
@@ -12,10 +13,20 @@ func DecodeFile(filename string, out interface{}) (err error) {
   }
   defer f.Close()
 
-  // lex, err := newLexer(f, tokenSplitFunc)
+  l, err := newLexer(bufio.NewReader(f))
+  if err != nil {
+    return err
+  }
+  tokens, err := l.Lex()
+  if err != nil {
+    return err
+  }
+  decoder, err := newDecoder(tokens)
+  if err != nil {
+    return err
+  }
 
-
-	return err
+	return decoder.decode(out)
 }
 
 // position is a position in a file
