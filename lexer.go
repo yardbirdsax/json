@@ -81,8 +81,8 @@ func (l *lexer) Lex() (tokens []*token, err error) {
 				tt = IDENT
 			}
 			currToken = &token{
-				pos: l.pos,
-        tokenType: tt,
+				pos:       l.pos,
+				tokenType: tt,
 			}
 			l.pos.column++
 		outerloop:
