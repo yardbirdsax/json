@@ -1,39 +1,54 @@
 package json
 
 import (
-	"errors"
+	"bufio"
 	"fmt"
+	"io"
 	"reflect"
 )
 
-type decoder struct {
+type Decoder struct {
+	lexer  *lexer
 	tokens []*token
 	pos    int
 }
 
-func newDecoder(t []*token) (p *decoder, err error) {
-	if len(t) == 0 {
-		return nil, errors.New("cannot initialize decoder with zero length tokens slice")
+func NewDecoder(r io.Reader) (d *Decoder) {
+	l, err := newLexer(bufio.NewReader(r))
+	if err != nil {
+		return nil
 	}
-	p = &decoder{
-		tokens: t,
+	d = &Decoder{
+		lexer: l,
 	}
-	return p, nil
+	return d
 }
 
-func (p *decoder) decode(in interface{}) (err error) {
+func (d *Decoder) lex() (err error) {
+	tokens, err := d.lexer.Lex()
+	d.tokens = tokens
+	return err
+}
+
+func (p *Decoder) Decode(in interface{}) (err error) {
+	err = p.lex()
+	if err != nil {
+		return err
+	}
 	inVal := reflect.ValueOf(in)
+	if inVal.Kind() != reflect.Pointer {
+		return fmt.Errorf("in is not a pointer (%s)", inVal.Kind().String())
+	}
+	inElem := inVal.Elem()
 	firstToken := p.tokens[0]
 	switch firstToken.value {
 	case '{':
-		if inVal.Kind() != reflect.Map {
-			return fmt.Errorf("JSON object cannot be decoded into type other than map (type is %q)", inVal.Kind())
+		switch inElem.Kind() {
+		case reflect.Interface:
+			inMap := map[string]interface{}{}
+			_, err = decodeObject(p.tokens, 0, inMap)
+			inElem.Set(reflect.ValueOf(inMap))
 		}
-		if inVal.Type().Elem().Kind() != reflect.Interface {
-			return fmt.Errorf("JSON object cannot be decoded into map of type other than interface (type is %q)", inVal.Elem().Kind())
-		}
-		inMap := in.(map[string]interface{})
-		_, err = decodeObject(p.tokens, 0, inMap)
 	}
 	return err
 }

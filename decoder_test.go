@@ -33,7 +33,7 @@ func TestDecode(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			testDataFile := filepath.Join("testdata", tc.name+".json")
 
-			err := DecodeFile(testDataFile, tc.obj)
+			err := DecodeFile(testDataFile, &tc.obj)
 
 			if tc.expectedError == nil {
 				assert.NoError(t, err, "error occurred decoding data")
