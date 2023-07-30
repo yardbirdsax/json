@@ -20,5 +20,4 @@ func DecodeFile(filename string, out interface{}) (err error) {
 type position struct {
 	line   int
 	column int
-	offset int64
 }

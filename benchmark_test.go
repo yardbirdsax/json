@@ -1,6 +1,7 @@
 package json
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"testing"
@@ -8,14 +9,14 @@ import (
 
 func BenchmarkDecode(b *testing.B) {
 	out := map[string]interface{}{}
-	f, err := os.Open("testdata/simple_object.json")
+	by, err := os.ReadFile("testdata/simple_object.json")
 	if err != nil {
 		b.Errorf("error opening file: %s", err)
 	}
-	defer f.Close()
+	buf := bytes.NewReader(by)
 	for i := 0; i < b.N; i++ {
-		f.Seek(0, 0)
-		decoder := NewDecoder(f)
+		buf.Reset(by)
+		decoder := NewDecoder(buf)
 		err = decoder.Decode(&out)
 		if err != nil {
 			b.Errorf("error decoding file: %s", err)
@@ -25,14 +26,14 @@ func BenchmarkDecode(b *testing.B) {
 
 func BenchmarkDecodeNative(b *testing.B) {
 	out := map[string]interface{}{}
-	f, err := os.Open("testdata/simple_object.json")
+	by, err := os.ReadFile("testdata/simple_object.json")
 	if err != nil {
 		b.Errorf("error opening file: %s", err)
 	}
-	defer f.Close()
+	buf := bytes.NewReader(by)
 	for i := 0; i < b.N; i++ {
-		f.Seek(0, 0)
-		decoder := json.NewDecoder(f)
+		buf.Reset(by)
+		decoder := json.NewDecoder(buf)
 		err = decoder.Decode(&out)
 		if err != nil {
 			b.Errorf("error decoding file: %s", err)

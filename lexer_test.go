@@ -24,7 +24,6 @@ func TestLex(t *testing.T) {
 					pos: position{
 						line:   1,
 						column: 1,
-						offset: 0,
 					},
 					value:     '{',
 					tokenType: SEPARATOR,
@@ -33,7 +32,6 @@ func TestLex(t *testing.T) {
 					pos: position{
 						line:   1,
 						column: 2,
-						offset: 1,
 					},
 					value:     '}',
 					tokenType: SEPARATOR,
@@ -48,7 +46,6 @@ func TestLex(t *testing.T) {
 					pos: position{
 						line:   1,
 						column: 1,
-						offset: 0,
 					},
 					value:     '{',
 					tokenType: SEPARATOR,
@@ -57,7 +54,6 @@ func TestLex(t *testing.T) {
 					pos: position{
 						line:   2,
 						column: 3,
-						offset: 4,
 					},
 					value:     "string",
 					tokenType: IDENT,
@@ -66,7 +62,6 @@ func TestLex(t *testing.T) {
 					pos: position{
 						line:   2,
 						column: 11,
-						offset: 12,
 					},
 					value:     ':',
 					tokenType: EQUAL,
@@ -75,7 +70,6 @@ func TestLex(t *testing.T) {
 					pos: position{
 						line:   2,
 						column: 13,
-						offset: 14,
 					},
 					value:     "a string",
 					tokenType: VALUE,
@@ -84,7 +78,6 @@ func TestLex(t *testing.T) {
 					pos: position{
 						line:   2,
 						column: 23,
-						offset: 24,
 					},
 					value:     ',',
 					tokenType: SEPARATOR,
@@ -93,7 +86,6 @@ func TestLex(t *testing.T) {
 					pos: position{
 						line:   3,
 						column: 3,
-						offset: 28,
 					},
 					value:     "another_string",
 					tokenType: IDENT,
@@ -102,7 +94,6 @@ func TestLex(t *testing.T) {
 					pos: position{
 						line:   3,
 						column: 19,
-						offset: 44,
 					},
 					value:     ':',
 					tokenType: EQUAL,
@@ -111,7 +102,6 @@ func TestLex(t *testing.T) {
 					pos: position{
 						line:   3,
 						column: 21,
-						offset: 46,
 					},
 					value:     "another string",
 					tokenType: VALUE,
@@ -120,7 +110,6 @@ func TestLex(t *testing.T) {
 					pos: position{
 						line:   4,
 						column: 1,
-						offset: 63,
 					},
 					value:     '}',
 					tokenType: SEPARATOR,

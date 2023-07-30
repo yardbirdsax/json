@@ -14,7 +14,7 @@ type Decoder struct {
 }
 
 func NewDecoder(r io.Reader) (d *Decoder) {
-	l, err := newLexer(bufio.NewReader(r))
+	l, err := newLexer(bufio.NewReaderSize(r, 256))
 	if err != nil {
 		return nil
 	}
@@ -24,67 +24,71 @@ func NewDecoder(r io.Reader) (d *Decoder) {
 	return d
 }
 
-func (d *Decoder) lex() (err error) {
-	tokens, err := d.lexer.Lex()
-	d.tokens = tokens
-	return err
-}
-
-func (p *Decoder) Decode(in interface{}) (err error) {
-	err = p.lex()
-	if err != nil {
-		return err
-	}
+func (d *Decoder) Decode(in interface{}) (err error) {
 	inVal := reflect.ValueOf(in)
 	if inVal.Kind() != reflect.Pointer {
 		return fmt.Errorf("in is not a pointer (%s)", inVal.Kind().String())
 	}
 	inElem := inVal.Elem()
-	firstToken := p.tokens[0]
+	firstToken, eof, err := d.lexer.Next()
+	if eof {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
 	switch firstToken.value {
 	case '{':
 		switch inElem.Kind() {
 		case reflect.Interface:
 			inMap := map[string]interface{}{}
-			_, err = decodeObject(p.tokens, 0, inMap)
+			err = d.decodeObject(inMap)
 			inElem.Set(reflect.ValueOf(inMap))
 		}
 	}
 	return err
 }
 
-func decodeObject(tokens []*token, start int, m map[string]interface{}) (newStart int, err error) {
-	if tokens[start].value != '{' {
-		return newStart, fmt.Errorf("invalid first token for object: %q", tokens[0].value)
-	}
-
-	current := start + 1
+func (d *Decoder) decodeObject(m map[string]interface{}) (err error) {
 	var key string
 	var val interface{}
+	var (
+		currentToken  *token
+		previousToken *token
+		eof           bool
+	)
 outerloop:
 	for {
-		if current > len(tokens)-1 {
-			return 0, fmt.Errorf("current token start (%d) is greater than length of tokens (%d)", current+1, len(tokens))
+		currentToken, eof, err = d.lexer.Next()
+		if eof {
+			return nil
 		}
-		switch tokens[current].tokenType {
+		if err != nil {
+			return err
+		}
+		if currentToken == nil {
+			continue
+		}
+		previousToken = d.lexer.Previous()
+
+		switch currentToken.tokenType {
 		case IDENT:
-			switch tokens[current-1].tokenType {
+			switch previousToken.tokenType {
 			case SEPARATOR:
-				key = tokens[current].value.(string)
+				key = currentToken.value.(string)
 			default:
-				return 0, fmt.Errorf("error parsing at token (%#v): indentifier was not proceeded by a valid token (%#v)", tokens[current], tokens[current-1])
+				return fmt.Errorf("error parsing at token (%#v): indentifier was not proceeded by a valid token (%#v)", currentToken, previousToken)
 			}
 		case VALUE:
-			switch tokens[current-1].tokenType {
+			switch previousToken.tokenType {
 			case EQUAL:
-				val = tokens[current].value
+				val = currentToken.value
 			default:
-				return 0, fmt.Errorf("error parsing at token (%#v): value was not proceeded by a valid token (%#v)", tokens[current], tokens[current-1])
+				return fmt.Errorf("error parsing at token (%#v): value was not proceeded by a valid token (%#v)", currentToken, previousToken)
 			}
 		case SEPARATOR:
-			switch tokens[current].value {
+			switch currentToken.value {
 			case OBJEND.Rune():
-				current++
 				break outerloop
 			}
 		}
@@ -93,7 +97,6 @@ outerloop:
 			key = ""
 			val = nil
 		}
-		current++
 	}
-	return current, err
+	return err
 }
